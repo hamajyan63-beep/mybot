@@ -1,63 +1,53 @@
 import telebot
 import requests
 import re
-import os
 
-# زانیارییەکان
 TOKEN = '8136305390:AAFm5OaVXYTk3UCan5l1ZzKoZYoHQH4tf0Y'
 CH_ID = '@kurdmodhack' 
-ADMIN_ID = 6185854746 
 
 bot = telebot.TeleBot(TOKEN)
 
-# فەنکشن بۆ زانیاری ئەندامانی چەناڵ
-def get_channel_members():
-    try:
-        count = bot.get_chat_members_count(CH_ID)
-        return count
-    except:
-        return "نادیار"
-
-# پشکنینی جۆینی ناچاری
 def check_join(user_id):
     try:
         res = bot.get_chat_member(CH_ID, user_id)
-        if res.status in ['member', 'administrator', 'creator']:
-            return True
-        return False
-    except:
-        return False
+        return res.status in ['member', 'administrator', 'creator']
+    except: return True
 
 @bot.message_handler(func=lambda m: True)
 def handle_all(m):
-    # پشکنینی جۆین - کەسەکە تا جۆین نەبێت بۆتەکە کار ناکات
+    # جۆینی ناچاری (دەتوانی لایبەری ئەگەر نەتویست)
     if not check_join(m.from_user.id):
-        bot.reply_to(m, f"🌟 سڵاو بەڕێزم،\nبۆ بەکارهێنانی بۆتەکە، تکایە سەرەتا جۆینی چەناڵی بەڕێز ئەسڵام بکە:\n\n👉 {CH_ID}")
+        bot.reply_to(m, f"🌟 سەرەتا جۆینی چەناڵی بەڕێز ئەسڵام بکە:\n\n👉 {CH_ID}")
         return
 
-    member_count = get_channel_members()
-    footer = f"\n\n📢 ژمارەی ئەندامانی چەناڵ: {member_count}"
-
-    # ١. وەڵامدانەوەی سڵاو بەو شێوەیەی داوات کردبوو
-    if m.text.lower() in ["سڵاو", "سلاو", "slaw", "hello"]:
-        bot.reply_to(m, "سڵاو، کاتت باش. من دەتوانم یارمەتیت بدەم لە داگرتنی ڤیدیۆ بێ هیچ لۆگۆیەک. تەنها لینکەکە بنێرە! ✨" + footer)
-        return
-
-    # ٢. داگرتنی ڤیدیۆی تیکتۆک
-    if "tiktok.com" in m.text:
-        bot.reply_to(m, "⏳ کەمێک چاوەڕێ بکە، خەریکم ڤیدیۆکە ئامادە دەکەم...")
+    # ١. داگرتنی پۆستی تێلیگرام (بەبێ سنووردارکردنی کات)
+    if "t.me/" in m.text:
+        bot.reply_to(m, "⏳ خەریکم ناوەڕۆکی پۆستەکە کۆپی دەکەم...")
         try:
-            # بەکارهێنانی API بۆ داگرتنی ڤیدیۆ بێ لۆگۆ
+            # پارچە پارە کردنی لینکەکە بۆ گەیشتن بە ئایدی پۆستەکە
+            link_parts = m.text.replace('https://', '').split('/')
+            
+            # ئەگەر لینکی چەناڵی گشتی بێت (وەک t.me/channel/123)
+            if len(link_parts) >= 3:
+                chat_id = f"@{link_parts[1]}"
+                msg_id = int(link_parts[2])
+                
+                # بەکارهێنانی copy_message بۆ تێپەڕاندنی قفڵی سکرین و فۆروارد
+                bot.copy_message(m.chat.id, chat_id, msg_id)
+            else:
+                bot.reply_to(m, "❌ لینکی پۆستەکە ناتەواوە.")
+        except Exception as e:
+            bot.reply_to(m, "❌ کێشەیەک هەبوو: یان چەناڵەکە تایبەتە و بۆتەکە لێی نییە، یان لینکەکە هەڵەیە.")
+        return
+
+    # ٢. بەشی تیکتۆک (هەمیشە چالاکە)
+    if "tiktok.com" in m.text:
+        bot.reply_to(m, "⏳ خەریکم ڤیدیۆکەت بۆ ئامادە دەکەم...")
+        try:
             res = requests.get(f"https://www.tikwm.com/api/?url={m.text}").json()
-            video_url = res['data']['play']
-            bot.send_video(m.chat.id, video_url, caption="فەرموو ڤیدیۆکەت بەبێ لۆگۆ ئامادەیە ✨" + footer)
+            bot.send_video(m.chat.id, res['data']['play'], caption="فەرموو بێ لۆگۆ ئامادەیە ✨")
         except:
-            bot.reply_to(m, "ببورە، کێشەیەک لە داگرتنی ئەم لینکەدا هەبوو. دڵنیابە کە لینکەکە ڕاستە.")
-    
-    # ٣. ئەگەر شتێکی تری نووسی و لینک نەبوو
-    else:
-        bot.reply_to(m, "تکایە تەنها لینکی تیکتۆک بنێرە بۆ داگرتن، یان بڵێ 'سڵاو' بۆ زانیاری زیاتر. 😊" + footer)
+            bot.reply_to(m, "❌ کێشەیەک لە داگرتنی تیکتۆکەکە هەبوو.")
 
 if __name__ == "__main__":
-    print("بۆتەکە بەبێ زیرەکی دەستکرد چالاک بوو...")
     bot.polling(none_stop=True)
