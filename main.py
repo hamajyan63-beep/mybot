@@ -1,21 +1,16 @@
 import telebot
 import requests
-import google.generativeai as genai
 import re
 import os
 
 # زانیارییەکان
 TOKEN = '8136305390:AAFm5OaVXYTk3UCan5l1ZzKoZYoHQH4tf0Y'
-GEMINI_KEY = 'AIzaSyD0QMwRTIbSWGF8qnfE0AEsS1mK2tGKj4s'
 CH_ID = '@kurdmodhack' 
 ADMIN_ID = 6185854746 
 
 bot = telebot.TeleBot(TOKEN)
 
-# ڕێکخستنی Gemini بە فێڵێکی سادە بۆ تێپەڕاندنی بلۆکی ناوچە (وەک کارکردنی VPN)
-genai.configure(api_key=GEMINI_KEY)
-model = genai.GenerativeModel('gemini-1.5-flash')
-
+# فەنکشن بۆ زانیاری ئەندامانی چەناڵ
 def get_channel_members():
     try:
         count = bot.get_chat_members_count(CH_ID)
@@ -23,6 +18,7 @@ def get_channel_members():
     except:
         return "نادیار"
 
+# پشکنینی جۆینی ناچاری
 def check_join(user_id):
     try:
         res = bot.get_chat_member(CH_ID, user_id)
@@ -34,7 +30,7 @@ def check_join(user_id):
 
 @bot.message_handler(func=lambda m: True)
 def handle_all(m):
-    # ١. جۆینی ناچاری (کەسەکە نەتوانێت هیچ بنووسێت تا جۆین نەبێت)
+    # پشکنینی جۆین - کەسەکە تا جۆین نەبێت بۆتەکە کار ناکات
     if not check_join(m.from_user.id):
         bot.reply_to(m, f"🌟 سڵاو بەڕێزم،\nبۆ بەکارهێنانی بۆتەکە، تکایە سەرەتا جۆینی چەناڵی بەڕێز ئەسڵام بکە:\n\n👉 {CH_ID}")
         return
@@ -42,30 +38,26 @@ def handle_all(m):
     member_count = get_channel_members()
     footer = f"\n\n📢 ژمارەی ئەندامانی چەناڵ: {member_count}"
 
-    # ٢. بەشی تیکتۆک
+    # ١. وەڵامدانەوەی سڵاو بەو شێوەیەی داوات کردبوو
+    if m.text.lower() in ["سڵاو", "سلاو", "slaw", "hello"]:
+        bot.reply_to(m, "سڵاو، کاتت باش. من دەتوانم یارمەتیت بدەم لە داگرتنی ڤیدیۆ بێ هیچ لۆگۆیەک. تەنها لینکەکە بنێرە! ✨" + footer)
+        return
+
+    # ٢. داگرتنی ڤیدیۆی تیکتۆک
     if "tiktok.com" in m.text:
-        bot.reply_to(m, "⏳ کەمێک چاوەڕێ بکە...")
+        bot.reply_to(m, "⏳ کەمێک چاوەڕێ بکە، خەریکم ڤیدیۆکە ئامادە دەکەم...")
         try:
-            links = re.findall(r'(https?://[^\s]+)', m.text)
-            url = next((l for l in links if "tiktok.com" in l), m.text)
-            res = requests.get(f"https://www.tikwm.com/api/?url={url}").json()
-            bot.send_video(m.chat.id, res['data']['play'], caption="فەرموو پێشکەشە ✨" + footer)
+            # بەکارهێنانی API بۆ داگرتنی ڤیدیۆ بێ لۆگۆ
+            res = requests.get(f"https://www.tikwm.com/api/?url={m.text}").json()
+            video_url = res['data']['play']
+            bot.send_video(m.chat.id, video_url, caption="فەرموو ڤیدیۆکەت بەبێ لۆگۆ ئامادەیە ✨" + footer)
         except:
-            bot.reply_to(m, "کێشەیەک لە لینکی تیکتۆکەکە هەیە.")
-            
-    # ٣. بەشی زیرەکی دەستکرد (بە فێڵی تێپەڕاندنی سێرڤەر)
+            bot.reply_to(m, "ببورە، کێشەیەک لە داگرتنی ئەم لینکەدا هەبوو. دڵنیابە کە لینکەکە ڕاستە.")
+    
+    # ٣. ئەگەر شتێکی تری نووسی و لینک نەبوو
     else:
-        try:
-            bot.send_chat_action(m.chat.id, 'typing')
-            # لێرەدا فەرمانەکە کەمێک دەگۆڕین تاوەکو سێرڤەرەکە ناچار بێت وەڵام بداتەوە
-            response = model.generate_content(
-                f"تۆ یاریدەدەرێکی کوردی، بە کوردی سۆرانی وەڵام بدەرەوە: {m.text}",
-                generation_config=genai.types.GenerationConfig(temperature=0.4)
-            )
-            bot.reply_to(m, response.text + footer)
-        except Exception as e:
-            # ئەگەر هەر ئیشی نەکرد، ئەم پەیامە دەدات
-            bot.reply_to(m, "ببورە، زیرەکی دەستکردەکە هێشتا کێشەی ناوچەی هەیە لەسەر Railway.")
+        bot.reply_to(m, "تکایە تەنها لینکی تیکتۆک بنێرە بۆ داگرتن، یان بڵێ 'سڵاو' بۆ زانیاری زیاتر. 😊" + footer)
 
 if __name__ == "__main__":
+    print("بۆتەکە بەبێ زیرەکی دەستکرد چالاک بوو...")
     bot.polling(none_stop=True)
