@@ -1,24 +1,36 @@
 import telebot
 import requests
+import google.generativeai as genai
 import re
 
-TOKEN = '8136305390:AAEukt2bvYpN6o9vthkesMeZ9LVzJBGA3Jo'
+# کلیلەکان بە ڕاستەوخۆ لێرە بنووسە
+TOKEN = '8136305390:AAFm5OaVXYTk3UCan5l1ZzKoZYoHQH4tf0Y'
+GEMINI_KEY = 'AIzaSyCfkobBQIcvMEZxyDYKuR7DPtk9s9rQvss'
+
 bot = telebot.TeleBot(TOKEN)
+genai.configure(api_key=GEMINI_KEY)
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 @bot.message_handler(func=lambda m: True)
-def handle(m):
-    links = re.findall(r'(https?://[^\s]+)', m.text)
-    tiktok_link = next((l for l in links if "tiktok.com" in l), None)
-
-    if tiktok_link:
+def handle_all(m):
+    if "tiktok.com" in m.text:
         bot.reply_to(m, "⏳ کەمێک چاوەڕێ بکە...")
         try:
-            res = requests.get(f"https://www.tikwm.com/api/?url={tiktok_link}").json()
-            video_url = res['data']['play']
-            bot.send_video(m.chat.id, video_url, caption="فەرموو براکەم ✨")
+            links = re.findall(r'(https?://[^\s]+)', m.text)
+            url = next((l for l in links if "tiktok.com" in l), m.text)
+            res = requests.get(f"https://www.tikwm.com/api/?url={url}").json()
+            bot.send_video(m.chat.id, res['data']['play'], caption="فەرموو ✨")
         except:
-            bot.reply_to(m, "ببورە، کێشەیەک لە داگرتنی ڤیدیۆکە هەبوو.")
+            bot.reply_to(m, "کێشەیەک لە تیکتۆک هەیە.")
     else:
-        bot.reply_to(m, "سڵاو! تەنها لینکی تیکتۆکم بۆ بنێرە.")
+        try:
+            bot.send_chat_action(m.chat.id, 'typing')
+            prompt = f"وەک یاریدەدەرێکی زیرەک، تەنها بە زمانی کوردی سۆرانی وەڵامی ئەمە بدەرەوە: {m.text}"
+            response = model.generate_content(prompt)
+            bot.reply_to(m, response.text)
+        except:
+            bot.reply_to(m, "ببورە، زیرەکی دەستکرد کەمێک ماندووە.")
 
-bot.polling(none_stop=True)
+if __name__ == "__main__":
+    print("Bot is running...")
+    bot.polling(none_stop=True)
