@@ -7,7 +7,6 @@ bot = telebot.TeleBot(TOKEN)
 
 @bot.message_handler(func=lambda m: True)
 def handle(m):
-    # لێرە تەنها لینکەکە لە ناو دەقەکە دەردەهێنین
     links = re.findall(r'(https?://[^\s]+)', m.text)
     tiktok_link = next((l for l in links if "tiktok.com" in l), None)
 
