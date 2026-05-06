@@ -2,9 +2,9 @@ import telebot
 import requests
 import os
 
-# زانیارییەکان
+# زانیارییەکان - یوزەرنەیمەکە گۆڕدرا بۆ کۆنەکە
 TOKEN = '8136305390:AAFm5OaVXYTk3UCan5l1ZzKoZYoHQH4tf0Y'
-CH_ID = '@Saratayak' 
+CH_ID = '@kurdmodhack' 
 ADMIN_ID = 6185854746 
 
 bot = telebot.TeleBot(TOKEN)
@@ -38,7 +38,7 @@ def check_join(user_id):
 def handle_all(m):
     update_bot_description(m.from_user.id)
     
-    # جۆینی ناچاری
+    # جۆینی ناچاری بۆ چەناڵە کۆنەکە
     if not check_join(m.from_user.id):
         bot.reply_to(m, f"🌟 سڵاو بەڕێزم،\nبۆ بەکارهێنانی بۆتەکە، تکایە سەرەتا جۆینی چەناڵەکەمان بکە:\n\n👉 {CH_ID}")
         return
@@ -50,7 +50,7 @@ def handle_all(m):
     if m.text.lower() in ["سڵاو", "سلاو", "slaw"]:
         bot.reply_to(m, "سڵاو، کاتت باش. تەنها لینکی ڤیدیۆی تیکتۆک بنێرە تا بەبێ لۆگۆ بۆت دابگرم! ✨" + footer)
     
-    # ٢. داگرتنی تیکتۆک (تەنها ئەمە ماوەتەوە)
+    # ٢. داگرتنی تیکتۆک
     elif "tiktok.com" in m.text:
         bot.reply_to(m, "⏳ کەمێک چاوەڕێ بکە...")
         try:
@@ -59,7 +59,6 @@ def handle_all(m):
         except:
             bot.reply_to(m, "❌ کێشەیەک لە داگرتنی ڤیدیۆکەدا هەبوو.")
             
-    # ٣. ئەگەر هەر شتێکی تری نارد
     else:
         bot.reply_to(m, "تکایە تەنها لینکی تیکتۆک بنێرە. 😊" + footer)
 
